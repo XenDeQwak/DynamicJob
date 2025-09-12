@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.xen.dynamicjob.JobController">
+
+    <center>
+        <ScrollPane fitToWidth="true">
+            <VBox fx:id="memoryBox" spacing="2" alignment="TOP_CENTER" prefHeight="400"/>
+        </ScrollPane>
+    </center>
+
+    <right>
+        <VBox spacing="10" alignment="CENTER" BorderPane.alignment="CENTER">
+            <TextField fx:id="processNameField" promptText="Process Name"/>
+            <TextField fx:id="sizeField" promptText="Size"/>
+            <Button fx:id="addBtn" text="Add Process"/>
+            <Button fx:id="freeBtn" text="Free Process"/>
+        </VBox>
+    </right>
+</BorderPane>
