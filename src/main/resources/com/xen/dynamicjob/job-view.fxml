@@ -25,6 +25,9 @@
             <TextField fx:id="sizeField" promptText="Size"/>
             <TextField fx:id="arrivalField" promptText="Arrival Time"/>
             <TextField fx:id="durationField" promptText="Processing Time"/>
+            <TextField fx:id="memorySizeField" promptText="Total Memory (KB)"/>
+            <TextField fx:id="compactionField" promptText="Compaction Interval (sec)"/>
+            <Button fx:id="setMemoryBtn" text="Set Memory"/>
             <Button fx:id="addBtn" text="Add Process"/>
             <Button fx:id="freeBtn" text="Free Process"/>
         </VBox>

@@ -22,11 +22,15 @@ public class JobController {
     @FXML private Button addBtn;
     @FXML private Button freeBtn;
     @FXML private VBox queueBox;
+    @FXML private TextField memorySizeField;
+    @FXML private TextField compactionField;
+    @FXML private Button setMemoryBtn;
 
     private int totalMemory = 200;
     private final LinkedList<Partition> memory = new LinkedList<>();
     private final LinkedList<Process> waitingQueue = new LinkedList<>();
     private final Random random = new Random();
+    private Timeline compactionTimer;
 
     @FXML
     private void initialize() {
@@ -54,6 +58,19 @@ public class JobController {
             freeProcess(name);
             refreshView();
         });
+
+        setMemoryBtn.setOnAction(e -> {
+            try {
+                int newSize = Integer.parseInt(memorySizeField.getText().trim());
+                if (newSize <= 0) return;
+                totalMemory = newSize;
+                memory.clear();
+                memory.add(new Partition("Free", totalMemory, Color.LIGHTGRAY));
+                refreshView();
+            } catch (NumberFormatException ignored) {}
+        });
+
+        compactionField.setOnAction(e -> setupCompactionTimer());
     }
 
     private void scheduleProcess(Process process) {
@@ -82,7 +99,15 @@ public class JobController {
     }
 
     private void allocateProcess(Process process) {
-        boolean allocated = false;
+        boolean allocated = tryAllocate(process);
+        if (!allocated) {
+            compactMemory();
+            allocated = tryAllocate(process);
+        }
+        if (!allocated) waitingQueue.add(process);
+    }
+
+    private boolean tryAllocate(Process process) {
         for (int i = 0; i < memory.size(); i++) {
             Partition p = memory.get(i);
             if (p.isFree() && p.getSize() >= process.getSize()) {
@@ -90,12 +115,12 @@ public class JobController {
                 p.setSize(p.getSize() - process.getSize());
                 if (p.getSize() == 0) memory.set(i, allocatedPartition);
                 else memory.add(i, allocatedPartition);
-                allocated = true;
-                break;
+                return true;
             }
         }
-        if (!allocated) waitingQueue.add(process);
+        return false;
     }
+
 
     private void freeProcess(String name) {
         for (int i = 0; i < memory.size(); i++) {
@@ -147,15 +172,27 @@ public class JobController {
             }
         }
     }
+    private void setupCompactionTimer() {
+        if (compactionTimer != null) compactionTimer.stop();
+        try {
+            int interval = Integer.parseInt(compactionField.getText().trim());
+            if (interval <= 0) return;
+            compactionTimer = new Timeline(new KeyFrame(Duration.seconds(interval), ev -> {
+                compactMemory();
+                refreshView();
+            }));
+            compactionTimer.setCycleCount(Timeline.INDEFINITE);
+            compactionTimer.play();
+        } catch (NumberFormatException ignored) {}
+    }
+
     private void compactMemory() {
         LinkedList<Partition> allocated = new LinkedList<>();
         int freeSize = 0;
-
         for (Partition p : memory) {
             if (p.isFree()) freeSize += p.getSize();
             else allocated.add(p);
         }
-
         memory.clear();
         memory.addAll(allocated);
         if (freeSize > 0) memory.add(new Partition("Free", freeSize, Color.LIGHTGRAY));
