@@ -36,6 +36,8 @@ public class JobController {
     private void initialize() {
         memory.clear();
         memory.add(new Partition("Free", totalMemory, Color.LIGHTGRAY));
+        refreshView();
+
         Process[] initialJobs = new Process[] {
                 new Process("Job1", 50, 0, 5),
                 new Process("Job2", 20, 0, 4),
@@ -52,8 +54,6 @@ public class JobController {
         for (Process job : initialJobs) {
             scheduleProcess(job);
         }
-
-        refreshView();
 
         addBtn.setOnAction(e -> {
             String name = processNameField.getText().trim();
@@ -75,8 +75,20 @@ public class JobController {
             freeProcess(name);
             refreshView();
         });
-    }
 
+        setMemoryBtn.setOnAction(e -> {
+            try {
+                int newSize = Integer.parseInt(memorySizeField.getText().trim());
+                if (newSize <= 0) return;
+                totalMemory = newSize;
+                memory.clear();
+                memory.add(new Partition("Free", totalMemory, Color.LIGHTGRAY));
+                refreshView();
+            } catch (NumberFormatException ignored) {}
+        });
+
+        compactionField.setOnAction(e -> setupCompactionTimer());
+    }
 
     private void scheduleProcess(Process process) {
         if (process.getArrivalTime() == 0) {
@@ -217,6 +229,8 @@ public class JobController {
             box.getChildren().add(label);
             memoryBox.getChildren().add(box);
         }
+
+        // Show waiting queue
         queueBox.getChildren().clear();
         for (Process p : waitingQueue) {
             HBox box = new HBox();
