@@ -104,6 +104,7 @@ public class JobController {
                 p.setName("Free");
                 p.setColor(Color.LIGHTGRAY);
                 merge();
+                compactMemory();
                 allocateFromQueue();
                 return;
             }
@@ -146,6 +147,20 @@ public class JobController {
             }
         }
     }
+    private void compactMemory() {
+        LinkedList<Partition> allocated = new LinkedList<>();
+        int freeSize = 0;
+
+        for (Partition p : memory) {
+            if (p.isFree()) freeSize += p.getSize();
+            else allocated.add(p);
+        }
+
+        memory.clear();
+        memory.addAll(allocated);
+        if (freeSize > 0) memory.add(new Partition("Free", freeSize, Color.LIGHTGRAY));
+    }
+
 
     private void refreshView() {
         memoryBox.getChildren().clear();
