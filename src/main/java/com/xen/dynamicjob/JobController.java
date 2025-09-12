@@ -84,6 +84,7 @@ public class JobController {
                 memory.clear();
                 memory.add(new Partition("Free", totalMemory, Color.LIGHTGRAY));
                 refreshView();
+                memorySizeField.clear();
             } catch (NumberFormatException ignored) {}
         });
 

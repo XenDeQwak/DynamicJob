@@ -17,10 +17,6 @@ public class JobApplication extends Application {
         stage.show();
     }
 
-    public void dynamicJob() {
-
-    }
-
     public static void main(String[] args) {
         launch();
     }
