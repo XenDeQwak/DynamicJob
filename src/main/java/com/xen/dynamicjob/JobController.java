@@ -1,26 +1,26 @@
 package com.xen.dynamicjob;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.util.Duration;
 
 import java.util.LinkedList;
 import java.util.Random;
 
 public class JobController {
-    @FXML
-    private VBox memoryBox;
-    @FXML
-    private TextField processNameField;
-    @FXML
-    private TextField sizeField;
-    @FXML
-    private Button addBtn;
-    @FXML
-    private Button freeBtn;
+    @FXML private VBox memoryBox;
+    @FXML private TextField processNameField;
+    @FXML private TextField sizeField;
+    @FXML private TextField arrivalField;
+    @FXML private TextField durationField;
+    @FXML private Button addBtn;
+    @FXML private Button freeBtn;
 
     private int totalMemory = 1000;
     private final LinkedList<Partition> memory = new LinkedList<>();
@@ -37,8 +37,16 @@ public class JobController {
             if (name.isEmpty()) return;
             try {
                 int size = Integer.parseInt(sizeField.getText().trim());
-                allocateProcess(new Process(name, size));
-                refreshView();
+                int arrival = Integer.parseInt(arrivalField.getText().trim());
+                int duration = Integer.parseInt(durationField.getText().trim());
+                if (arrival < 0) {
+                    throw new IllegalArgumentException("Arrival time cannot be negative");
+                }
+                if (duration <= 0) {
+                    throw new IllegalArgumentException("Processing time must be positive");
+                }
+                Process process = new Process(name, size, arrival, duration);
+                scheduleProcess(process);
             } catch (NumberFormatException ignored) {}
         });
 
@@ -49,6 +57,42 @@ public class JobController {
             refreshView();
         });
     }
+
+    private void scheduleProcess(Process process) {
+        if (process.getArrivalTime() == 0) {
+            allocateProcess(process);
+            refreshView();
+            if (process.getProcessingTime() > 0) {
+                Timeline endTimer = new Timeline(new KeyFrame(Duration.seconds(process.getProcessingTime()), ev -> {
+                    freeProcess(process.getName());
+                    refreshView();
+                }));
+                endTimer.setCycleCount(1);
+                endTimer.play();
+            }
+        } else {
+            Timeline arrivalTimer = getTimeline(process);
+            arrivalTimer.play();
+        }
+    }
+
+    private Timeline getTimeline(Process process) {
+        Timeline arrivalTimer = new Timeline(new KeyFrame(Duration.seconds(process.getArrivalTime()), ev -> {
+            allocateProcess(process);
+            refreshView();
+            if (process.getProcessingTime() > 0) {
+                Timeline endTimer = new Timeline(new KeyFrame(Duration.seconds(process.getProcessingTime()), ev2 -> {
+                    freeProcess(process.getName());
+                    refreshView();
+                }));
+                endTimer.setCycleCount(1);
+                endTimer.play();
+            }
+        }));
+        arrivalTimer.setCycleCount(1);
+        return arrivalTimer;
+    }
+
 
     private void allocateProcess(Process process) {
         for (int i = 0; i < memory.size(); i++) {

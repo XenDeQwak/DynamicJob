@@ -17,6 +17,8 @@
         <VBox spacing="10" alignment="CENTER" BorderPane.alignment="CENTER">
             <TextField fx:id="processNameField" promptText="Process Name"/>
             <TextField fx:id="sizeField" promptText="Size"/>
+            <TextField fx:id="arrivalField" promptText="Arrival Time"/>
+            <TextField fx:id="durationField" promptText="Processing Time"/>
             <Button fx:id="addBtn" text="Add Process"/>
             <Button fx:id="freeBtn" text="Free Process"/>
         </VBox>
