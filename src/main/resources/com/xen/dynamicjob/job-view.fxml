@@ -8,9 +8,15 @@
             fx:controller="com.xen.dynamicjob.JobController">
 
     <center>
-        <ScrollPane fitToWidth="true">
-            <VBox fx:id="memoryBox" spacing="2" alignment="TOP_CENTER" prefHeight="400"/>
-        </ScrollPane>
+        <VBox spacing="10" alignment="TOP_CENTER">
+            <Label text="Memory"/>
+            <ScrollPane fitToWidth="true" prefHeight="300">
+                <VBox fx:id="memoryBox" spacing="2" alignment="TOP_CENTER"/>
+            </ScrollPane>
+
+            <Label text="Waiting Queue"/>
+            <VBox fx:id="queueBox" spacing="2" alignment="TOP_CENTER" prefHeight="150"/>
+        </VBox>
     </center>
 
     <right>
@@ -24,3 +30,4 @@
         </VBox>
     </right>
 </BorderPane>
+

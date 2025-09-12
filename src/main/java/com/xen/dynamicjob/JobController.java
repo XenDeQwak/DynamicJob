@@ -21,9 +21,11 @@ public class JobController {
     @FXML private TextField durationField;
     @FXML private Button addBtn;
     @FXML private Button freeBtn;
+    @FXML private VBox queueBox;
 
-    private int totalMemory = 1000;
+    private int totalMemory = 200;
     private final LinkedList<Partition> memory = new LinkedList<>();
+    private final LinkedList<Process> waitingQueue = new LinkedList<>();
     private final Random random = new Random();
 
     @FXML
@@ -39,12 +41,8 @@ public class JobController {
                 int size = Integer.parseInt(sizeField.getText().trim());
                 int arrival = Integer.parseInt(arrivalField.getText().trim());
                 int duration = Integer.parseInt(durationField.getText().trim());
-                if (arrival < 0) {
-                    throw new IllegalArgumentException("Arrival time cannot be negative");
-                }
-                if (duration <= 0) {
-                    throw new IllegalArgumentException("Processing time must be positive");
-                }
+                if (arrival < 0) throw new IllegalArgumentException("Arrival time cannot be negative");
+                if (duration <= 0) throw new IllegalArgumentException("Processing time must be positive");
                 Process process = new Process(name, size, arrival, duration);
                 scheduleProcess(process);
             } catch (NumberFormatException ignored) {}
@@ -62,49 +60,41 @@ public class JobController {
         if (process.getArrivalTime() == 0) {
             allocateProcess(process);
             refreshView();
-            if (process.getProcessingTime() > 0) {
-                Timeline endTimer = new Timeline(new KeyFrame(Duration.seconds(process.getProcessingTime()), ev -> {
-                    freeProcess(process.getName());
-                    refreshView();
-                }));
-                endTimer.setCycleCount(1);
-                endTimer.play();
-            }
+            if (process.getProcessingTime() > 0) scheduleEnd(process);
         } else {
-            Timeline arrivalTimer = getTimeline(process);
+            Timeline arrivalTimer = new Timeline(new KeyFrame(Duration.seconds(process.getArrivalTime()), ev -> {
+                allocateProcess(process);
+                refreshView();
+                if (process.getProcessingTime() > 0) scheduleEnd(process);
+            }));
+            arrivalTimer.setCycleCount(1);
             arrivalTimer.play();
         }
     }
 
-    private Timeline getTimeline(Process process) {
-        Timeline arrivalTimer = new Timeline(new KeyFrame(Duration.seconds(process.getArrivalTime()), ev -> {
-            allocateProcess(process);
+    private void scheduleEnd(Process process) {
+        Timeline endTimer = new Timeline(new KeyFrame(Duration.seconds(process.getProcessingTime()), ev -> {
+            freeProcess(process.getName());
             refreshView();
-            if (process.getProcessingTime() > 0) {
-                Timeline endTimer = new Timeline(new KeyFrame(Duration.seconds(process.getProcessingTime()), ev2 -> {
-                    freeProcess(process.getName());
-                    refreshView();
-                }));
-                endTimer.setCycleCount(1);
-                endTimer.play();
-            }
         }));
-        arrivalTimer.setCycleCount(1);
-        return arrivalTimer;
+        endTimer.setCycleCount(1);
+        endTimer.play();
     }
 
-
     private void allocateProcess(Process process) {
+        boolean allocated = false;
         for (int i = 0; i < memory.size(); i++) {
             Partition p = memory.get(i);
             if (p.isFree() && p.getSize() >= process.getSize()) {
-                Partition allocated = new Partition(process.getName(), process.getSize(), randomColor());
+                Partition allocatedPartition = new Partition(process.getName(), process.getSize(), randomColor());
                 p.setSize(p.getSize() - process.getSize());
-                if (p.getSize() == 0) memory.set(i, allocated);
-                else memory.add(i, allocated);
-                return;
+                if (p.getSize() == 0) memory.set(i, allocatedPartition);
+                else memory.add(i, allocatedPartition);
+                allocated = true;
+                break;
             }
         }
+        if (!allocated) waitingQueue.add(process);
     }
 
     private void freeProcess(String name) {
@@ -114,9 +104,35 @@ public class JobController {
                 p.setName("Free");
                 p.setColor(Color.LIGHTGRAY);
                 merge();
+                allocateFromQueue();
                 return;
             }
         }
+    }
+
+    private void allocateFromQueue() {
+        if (waitingQueue.isEmpty()) return;
+
+        LinkedList<Process> allocatedProcesses = new LinkedList<>();
+        for (Process process : waitingQueue) {
+            boolean allocated = false;
+            for (int i = 0; i < memory.size(); i++) {
+                Partition p = memory.get(i);
+                if (p.isFree() && p.getSize() >= process.getSize()) {
+                    Partition allocatedPartition = new Partition(process.getName(), process.getSize(), randomColor());
+                    p.setSize(p.getSize() - process.getSize());
+                    if (p.getSize() == 0) memory.set(i, allocatedPartition);
+                    else memory.add(i, allocatedPartition);
+                    allocated = true;
+
+                    if (process.getProcessingTime() > 0) scheduleEnd(process);
+                    break;
+                }
+            }
+            if (allocated) allocatedProcesses.add(process);
+        }
+        waitingQueue.removeAll(allocatedProcesses);
+        refreshView();
     }
 
     private void merge() {
@@ -140,11 +156,23 @@ public class JobController {
             box.setPrefHeight(p.getSize() * scale);
             box.setStyle("-fx-border-color: black;");
             box.setBackground(new Background(new BackgroundFill(p.getColor(), CornerRadii.EMPTY, null)));
-            Label label = new Label(p.getName() + " (" + p.getSize() + " MB)");
+            Label label = new Label(p.getName() + " (" + p.getSize() + " KB)");
             box.getChildren().add(label);
             memoryBox.getChildren().add(box);
         }
+
+        // Show waiting queue
+        queueBox.getChildren().clear();
+        for (Process p : waitingQueue) {
+            HBox box = new HBox();
+            box.setPrefWidth(200);
+            box.setStyle("-fx-border-color: gray; -fx-border-style: dashed;");
+            Label label = new Label(p.getName() + " (" + p.getSize() + " KB)");
+            box.getChildren().add(label);
+            queueBox.getChildren().add(box);
+        }
     }
+
 
     private Color randomColor() {
         return Color.color(random.nextDouble(), random.nextDouble(), random.nextDouble());
