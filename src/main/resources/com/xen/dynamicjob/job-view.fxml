@@ -1,36 +1,63 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.geometry.*?>
 
-<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+<BorderPane xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.xen.dynamicjob.JobController">
 
     <center>
-        <VBox spacing="10" alignment="TOP_CENTER">
-            <Label text="Memory"/>
-            <ScrollPane fitToWidth="true" prefHeight="300">
-                <VBox fx:id="memoryBox" spacing="2" alignment="TOP_CENTER"/>
-            </ScrollPane>
+        <VBox alignment="TOP_CENTER" spacing="10">
+            <padding>
+                <Insets top="20" right="20" bottom="20" left="20"/>
+            </padding>
 
-            <Label text="Waiting Queue"/>
-            <VBox fx:id="queueBox" spacing="2" alignment="TOP_CENTER" prefHeight="150"/>
+            <Label text="Memory" />
+            <VBox fx:id="memoryBox" alignment="TOP_CENTER" spacing="2" prefHeight="300">
+                <padding>
+                    <Insets top="5" right="10" bottom="5" left="10"/>
+                </padding>
+            </VBox>
+
+            <Label text="Ready Queue" />
+            <VBox fx:id="queueBox" alignment="TOP_CENTER" spacing="2" prefHeight="150">
+                <padding>
+                    <Insets top="5" right="10" bottom="5" left="10"/>
+                </padding>
+            </VBox>
+
+            <Label text="Initial Jobs" />
+            <TableView fx:id="jobsTable" editable="true" prefHeight="250">
+                <VBox.margin>
+                    <Insets top="5" right="0" bottom="10" left="0"/>
+                </VBox.margin>
+                <columns>
+                    <TableColumn fx:id="nameCol" text="Name" prefWidth="100"/>
+                    <TableColumn fx:id="sizeCol" text="Size" prefWidth="100"/>
+                    <TableColumn fx:id="arrivalCol" text="Arrival Time" prefWidth="100"/>
+                    <TableColumn fx:id="durationCol" text="Processing Time" prefWidth="120"/>
+                </columns>
+            </TableView>
         </VBox>
     </center>
 
     <right>
-        <VBox spacing="10" alignment="CENTER" BorderPane.alignment="CENTER">
-            <TextField fx:id="processNameField" promptText="Process Name"/>
-            <TextField fx:id="sizeField" promptText="Size"/>
-            <TextField fx:id="arrivalField" promptText="Arrival Time"/>
-            <TextField fx:id="durationField" promptText="Processing Time"/>
-            <TextField fx:id="memorySizeField" promptText="Total Memory (KB)"/>
-            <TextField fx:id="compactionField" promptText="Compaction Interval (sec)"/>
-            <Button fx:id="setMemoryBtn" text="Set Memory"/>
-            <Button fx:id="addBtn" text="Add Process"/>
-            <Button fx:id="freeBtn" text="Free Process"/>
+        <VBox alignment="CENTER" spacing="10" BorderPane.alignment="CENTER">
+            <padding>
+                <Insets top="20" right="20" bottom="20" left="20"/>
+            </padding>
+
+            <TextField fx:id="processNameField" promptText="Process Name" />
+            <TextField fx:id="sizeField" promptText="Size" />
+            <TextField fx:id="arrivalField" promptText="Arrival Time" />
+            <TextField fx:id="durationField" promptText="Processing Time" />
+            <TextField fx:id="memorySizeField" promptText="Total Memory (KB)" />
+            <TextField fx:id="compactionField" promptText="Compaction Interval (sec)" />
+            <Button fx:id="setMemoryBtn" text="Set Memory" />
+            <Button fx:id="addBtn" text="Add Process" />
+            <Button fx:id="freeBtn" text="Free Process" />
+            <Button fx:id="scheduleJobsBtn" text="Add default jobs"/>
         </VBox>
     </right>
 </BorderPane>
-

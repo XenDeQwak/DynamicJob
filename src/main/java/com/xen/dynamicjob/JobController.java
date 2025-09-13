@@ -1,14 +1,19 @@
+//logic was made possible by chatgpt and geeksforgeeks.com
+
 package com.xen.dynamicjob;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
+import javafx.util.converter.IntegerStringConverter;
 
 import java.util.LinkedList;
 import java.util.Random;
@@ -25,6 +30,18 @@ public class JobController {
     @FXML private TextField memorySizeField;
     @FXML private TextField compactionField;
     @FXML private Button setMemoryBtn;
+    @FXML
+    private TableView<Process> jobsTable;
+    @FXML
+    private TableColumn<Process, String> nameCol;
+    @FXML
+    private TableColumn<Process, Integer> sizeCol;
+    @FXML
+    private TableColumn<Process, Integer> arrivalCol;
+    @FXML
+    private TableColumn<Process, Integer> durationCol;
+    @FXML
+    private Button scheduleJobsBtn;
 
     private int totalMemory = 200;
     private final LinkedList<Partition> memory = new LinkedList<>();
@@ -38,7 +55,7 @@ public class JobController {
         memory.add(new Partition("Free", totalMemory, Color.LIGHTGRAY));
         refreshView();
 
-        Process[] initialJobs = new Process[] {
+        ObservableList<Process> initialJobsList = FXCollections.observableArrayList(
                 new Process("Job1", 50, 0, 5),
                 new Process("Job2", 20, 0, 4),
                 new Process("Job3", 30, 0, 3),
@@ -49,25 +66,61 @@ public class JobController {
                 new Process("Job8", 30, 0, 3),
                 new Process("Job9", 20, 0, 4),
                 new Process("Job10", 50, 0, 5)
-        };
+        );
 
-        for (Process job : initialJobs) {
-            scheduleProcess(job);
-        }
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
+        sizeCol.setCellValueFactory(new PropertyValueFactory<>("size"));
+        arrivalCol.setCellValueFactory(new PropertyValueFactory<>("arrivalTime"));
+        durationCol.setCellValueFactory(new PropertyValueFactory<>("processingTime"));
+
+        jobsTable.setItems(initialJobsList);
+
+        jobsTable.setEditable(true);
+        sizeCol.setCellFactory(TextFieldTableCell.forTableColumn(new IntegerStringConverter()));
+        arrivalCol.setCellFactory(TextFieldTableCell.forTableColumn(new IntegerStringConverter()));
+        durationCol.setCellFactory(TextFieldTableCell.forTableColumn(new IntegerStringConverter()));
+
+        sizeCol.setOnEditCommit(e -> e.getRowValue().setSize(e.getNewValue()));
+        arrivalCol.setOnEditCommit(e -> e.getRowValue().setArrivalTime(e.getNewValue()));
+        durationCol.setOnEditCommit(e -> e.getRowValue().setProcessingTime(e.getNewValue()));
+
+
 
         addBtn.setOnAction(e -> {
             String name = processNameField.getText().trim();
             if (name.isEmpty()) return;
+
+            boolean memorySizeHasValue = !memorySizeField.getText().trim().isEmpty();
+            boolean otherFieldsHaveValue =
+                    !processNameField.getText().trim().isEmpty() ||
+                            !sizeField.getText().trim().isEmpty() ||
+                            !arrivalField.getText().trim().isEmpty() ||
+                            !durationField.getText().trim().isEmpty();
+
+            if (memorySizeHasValue && otherFieldsHaveValue) {
+                showError("Can't have a value in Memory Size when other fields also have values.");
+                return;
+            }
+
+
             try {
-                int size = Integer.parseInt(sizeField.getText().trim());
-                int arrival = Integer.parseInt(arrivalField.getText().trim());
-                int duration = Integer.parseInt(durationField.getText().trim());
-                if (arrival < 0) throw new IllegalArgumentException("Arrival time cannot be negative");
-                if (duration <= 0) throw new IllegalArgumentException("Processing time must be positive");
-                Process process = new Process(name, size, arrival, duration);
+                Process process = getProcess(name);
                 scheduleProcess(process);
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ex) {
+                showError("Size, arrival and compaction time, and processing time must be valid numbers.");
+                sizeField.clear();
+                arrivalField.clear();
+                durationField.clear();
+                compactionField.clear();
+            }
         });
+
+        scheduleJobsBtn.setOnAction(e -> {
+            for (Process job : initialJobsList) {
+                scheduleProcess(job);
+            }
+        });
+
 
         freeBtn.setOnAction(e -> {
             String name = processNameField.getText().trim();
@@ -85,10 +138,29 @@ public class JobController {
                 memory.add(new Partition("Free", totalMemory, Color.LIGHTGRAY));
                 refreshView();
                 memorySizeField.clear();
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ex) {
+                showError("Memory size must be a number.");
+            }
         });
 
+
         compactionField.setOnAction(e -> setupCompactionTimer());
+    }
+
+    private Process getProcess(String name) {
+        String sizeText = sizeField.getText().trim();
+        String arrivalText = arrivalField.getText().trim();
+        String durationText = durationField.getText().trim();
+
+        if (sizeText.isEmpty() || arrivalText.isEmpty() || durationText.isEmpty())
+            throw new NumberFormatException();
+
+        int size = Integer.parseInt(sizeText);
+        int arrival = Integer.parseInt(arrivalText);
+        int duration = Integer.parseInt(durationText);
+
+        Process process = new Process(name, size, arrival, duration);
+        return process;
     }
 
     private void scheduleProcess(Process process) {
@@ -201,8 +273,11 @@ public class JobController {
             }));
             compactionTimer.setCycleCount(Timeline.INDEFINITE);
             compactionTimer.play();
-        } catch (NumberFormatException ignored) {}
+        } catch (NumberFormatException ex) {
+            showError("Compaction interval must be a number.");
+        }
     }
+
 
     private void compactMemory() {
         LinkedList<Partition> allocated = new LinkedList<>();
@@ -231,7 +306,6 @@ public class JobController {
             memoryBox.getChildren().add(box);
         }
 
-        // Show waiting queue
         queueBox.getChildren().clear();
         for (Process p : waitingQueue) {
             HBox box = new HBox();
@@ -242,6 +316,15 @@ public class JobController {
             queueBox.getChildren().add(box);
         }
     }
+
+    private void showError(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Input Error");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
 
 
     private Color randomColor() {
